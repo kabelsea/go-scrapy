@@ -1,2 +1,2 @@
 # go-scrapy
-A scrapy implementation in Go.
+A scrapy implementation in Go. (Work in progres)
