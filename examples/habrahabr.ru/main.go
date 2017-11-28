@@ -15,8 +15,8 @@ func main() {
 			"https://habrahabr.ru/top/",
 			"https://habrahabr.ru/all/",
 		},
-		Rules: []scrapy.Rule{
-			scrapy.Rule{
+		Rules: &scrapy.Rules{
+			&scrapy.Rule{
 				LinkExtractor: scrapy.LinkExtractor{
 					Allow:        []string{"/post/\\d+/"},
 					AllowDomains: []string{"habrahabr.ru"},
@@ -24,7 +24,7 @@ func main() {
 				},
 				Follow: true,
 			},
-			scrapy.Rule{
+			&scrapy.Rule{
 				LinkExtractor: scrapy.LinkExtractor{
 					Allow:        []string{"/post/\\d+/"},
 					AllowDomains: []string{"habrahabr.ru"},

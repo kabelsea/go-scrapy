@@ -1,33 +1,51 @@
 package scrapy
 
 import (
-	"io/ioutil"
 	"net/http"
+	"net/url"
+
+	logger "github.com/sirupsen/logrus"
 )
 
+// Spider request type
 type Request struct {
-	Url     string
-	Body    []byte
-	Meta    map[string]string
-	Headers map[string]string
-	Retry   int
+	Url       string
+	Attempt   int
+	Config    *SpiderConfig
+	ParsedURL *url.URL
 }
 
-// Method send get http request
-func (r *Request) Download() bool {
+type RequestChannel chan Request
+
+// Make request method
+func MakeRequest(link string, config *SpiderConfig) *Request {
+	parsedUrl, _ := url.Parse(link)
+
+	return &Request{
+		Url:       link,
+		Attempt:   0,
+		Config:    config,
+		ParsedURL: parsedUrl,
+	}
+}
+
+// Return request headers
+func (r *Request) Headers() map[string]string {
+	return r.Config.RequestHeaders
+}
+
+// Method make http request, check http status code and return Response object
+func (r *Request) Download() *Response {
+	response := MakeResponse(r)
+
 	resp, err := http.Get(r.Url)
 	if err != nil {
-		r.Retry++
-		return false
+		r.Attempt++
+		logger.Error(err)
+		return response
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		r.Retry++
-		return false
-	}
-	r.Body = body
-
-	return true
+	response.HttpResponse = resp
+	return response
 }

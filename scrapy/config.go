@@ -21,7 +21,7 @@ var (
 		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 		"Accept-Language": "en",
 	}
-	RetryHttpCodes = []int{500, 502, 503, 504, 408}
+	RetryHttpCodes = []int{500, 502, 503, 504, 408, 404}
 	RetryTimes     = 2
 )
 
@@ -31,7 +31,7 @@ type SpiderConfig struct {
 	Name           string
 	AllowedDomains []string
 	StartUrls      []string
-	Rules          []Rule
+	Rules          *Rules
 
 	MaxDepth int
 
@@ -46,7 +46,7 @@ type SpiderConfig struct {
 	UserAgent      string
 	RequestHeaders map[string]string
 
-	// Retry settings
+	// Attempt settings
 	RetryEnabled   bool
 	RetryHttpCodes []int
 	RetryTimes     int
