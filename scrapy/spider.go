@@ -49,7 +49,7 @@ func (s *Spider) Wait() {
 	go func() {
 		for _, url := range s.Config.StartUrls {
 			s.ProcessedUrls[url] = 1
-			requests <- *MakeRequest(url, s.Config)
+			requests <- *NewRequest(url, s.Config)
 		}
 	}()
 
@@ -65,7 +65,7 @@ func (s *Spider) Wait() {
 				logger.Infof("%s proceed", req.Url)
 			}(req)
 		case resp := <-responses:
-			log.Println(resp.Request.Url, resp.StatusCode())
+			log.Println(resp.Request.Url, resp.StatusCode)
 
 			if !resp.Success() {
 				req := resp.Request
@@ -86,7 +86,7 @@ func (s *Spider) Wait() {
 						s.ProcessedUrls[url] = 1
 
 						go func(link string) {
-							requests <- *MakeRequest(link, s.Config)
+							requests <- *NewRequest(link, s.Config)
 						}(url)
 					}
 				}
