@@ -1,6 +1,7 @@
 package scrapy
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -17,8 +18,8 @@ type Request struct {
 
 type RequestChannel chan Request
 
-// Make request method
-func MakeRequest(link string, config *SpiderConfig) *Request {
+// Create new request object
+func NewRequest(link string, config *SpiderConfig) *Request {
 	parsedUrl, _ := url.Parse(link)
 
 	return &Request{
@@ -36,7 +37,7 @@ func (r *Request) Headers() map[string]string {
 
 // Method make http request, check http status code and return Response object
 func (r *Request) Download() *Response {
-	response := MakeResponse(r)
+	response := NewResponse(r)
 
 	resp, err := http.Get(r.Url)
 	if err != nil {
@@ -46,6 +47,15 @@ func (r *Request) Download() *Response {
 	}
 	defer resp.Body.Close()
 
-	response.HttpResponse = resp
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		r.Attempt++
+		logger.Error(err)
+		return response
+	}
+
+	response.StatusCode = resp.StatusCode
+	response.Body = body
+
 	return response
 }
