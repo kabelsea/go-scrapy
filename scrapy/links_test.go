@@ -8,15 +8,15 @@ import (
 func MockLinkExtractor() LinkExtractor {
 	return LinkExtractor{
 		Allow: []string{
-			`^search\.php\?.+`,
-			`^detail\.php\?.+`,
+			`search\.php\?.+`,
+			`detail\.php\?.+`,
 		},
 		Deny: []string{
-			`^catalog\.html\?.+`,
-			`^map\.html\?.+`,
+			`catalog\.html\?.+`,
+			`map\.html\?.+`,
 		},
 		AllowDomains: []string{
-			`test\.ru`,
+			`^test\.ru`,
 			`^.*\.test\.ru`,
 		},
 		DenyDomains: []string{
@@ -50,7 +50,7 @@ func TestLinkExtractor_Match(t *testing.T) {
 	lex := MockLinkExtractor()
 	lex.Compile()
 
-	u := "https://test.ru/"
+	u := "https://test.ru/search.php?q=search"
 	if !lex.Match(ParseUrl(u)) {
 		t.Error(
 			"Link not matched", u,
@@ -59,12 +59,21 @@ func TestLinkExtractor_Match(t *testing.T) {
 		)
 	}
 
-	u = "https://test.ru/search.php?q=search"
-	if !lex.Match(ParseUrl(u)) {
+	u = "https://test.ru/notpresent.html"
+	if lex.Match(ParseUrl(u)) {
 		t.Error(
-			"Link not matched", u,
-			"expected", true,
-			"got", false,
+			"Link matched", u,
+			"expected", false,
+			"got", true,
+		)
+	}
+
+	u = "https://notpresent.com/search.php?q=search"
+	if lex.Match(ParseUrl(u)) {
+		t.Error(
+			"Link matched", u,
+			"expected", false,
+			"got", true,
 		)
 	}
 

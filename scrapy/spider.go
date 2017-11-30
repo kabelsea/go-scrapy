@@ -1,7 +1,6 @@
 package scrapy
 
 import (
-	"log"
 	"os"
 	"sync"
 
@@ -75,8 +74,6 @@ func (s *Spider) Wait() {
 				logger.Infof("%s proceed", req.Url)
 			}(req)
 		case resp := <-responses:
-			log.Println(resp.Request.Url, resp.StatusCode)
-
 			if !resp.Success() {
 				req := resp.Request
 
@@ -97,14 +94,10 @@ func (s *Spider) Wait() {
 					req := NewRequest(link, s.Config)
 					req.Depth++
 
-					if req.CanFollow() && !s.CheckProcessUrl(link) {
+					if (req.CanFollow() || req.CanParse()) && !s.CheckProcessUrl(link) {
 						go func(req *Request) {
 							requests <- *req
 						}(req)
-					}
-
-					if req.CanParse() {
-						continue
 					}
 
 					s.ProcessedUrls[link] = 1

@@ -1,6 +1,7 @@
 package scrapy
 
 import (
+	"fmt"
 	"net/url"
 	"reflect"
 	"regexp"
@@ -47,46 +48,61 @@ func (l *LinkExtractor) Compile() error {
 
 // Method checks whether the http url to the link extractor rule is appropriate
 func (l *LinkExtractor) Match(u *url.URL) bool {
-	matched := false
+	var (
+		matched bool
+		uri     string
+	)
 
-	// check if domain allow
-	regexps, ok := l.Compiled["AllowDomains"]
-	if ok {
-		for _, r := range regexps {
-			if r.MatchString(u.Host) {
-				matched = true
-			}
-		}
+	// Build URI with fragment
+	uri = u.RequestURI()
+	if u.Fragment != "" {
+		uri = fmt.Sprintf("%s#%s", uri, u.Fragment)
 	}
 
 	// check if domain deny
-	regexps, ok = l.Compiled["DenyDomains"]
-	if ok && matched {
+	regexps, ok := l.Compiled["DenyDomains"]
+	if ok {
 		for _, r := range regexps {
 			if r.MatchString(u.Host) {
-				matched = false
-			}
-		}
-	}
-
-	// check if uri allow
-	regexps, ok = l.Compiled["Allow"]
-	if ok && matched {
-		for _, r := range regexps {
-			if r.MatchString(u.RequestURI()) {
-				matched = true
+				return false
 			}
 		}
 	}
 
 	// check if uri deny
 	regexps, ok = l.Compiled["Deny"]
-	if ok && matched {
+	if ok {
 		for _, r := range regexps {
-			if r.MatchString(u.RequestURI()) {
-				matched = false
+			if r.MatchString(uri) {
+				return false
 			}
 		}
+	}
+
+	// check if domain allow
+	regexps, ok = l.Compiled["AllowDomains"]
+	if ok {
+		for _, r := range regexps {
+			if r.MatchString(u.Host) {
+				matched = true
+				break
+			}
+		}
+	} else {
+		matched = true
+	}
+
+	// check if uri allow
+	regexps, ok = l.Compiled["Allow"]
+	if ok && matched {
+		flag := false
+		for _, r := range regexps {
+			if r.MatchString(uri) {
+				flag = true
+				break
+			}
+		}
+		matched = flag
 	}
 	return matched
 }

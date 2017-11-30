@@ -8,8 +8,8 @@ var (
 	config = SpiderConfig{
 		Rules: []Rule{
 			{
-				LinkExtractor: LinkExtractor{
-					Allow:        []string{`^search\.php.+`},
+				LinkExtractor: &LinkExtractor{
+					Allow:        []string{`search\.php.+`},
 					AllowDomains: []string{`^test\.com`},
 				},
 				Follow:  true,
