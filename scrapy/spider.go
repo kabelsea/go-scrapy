@@ -22,10 +22,20 @@ func NewSpider(config *SpiderConfig) (*Spider, error) {
 	logger.SetOutput(os.Stdout)
 	if config.Debug {
 		logger.SetLevel(logger.DebugLevel)
+	} else {
+		logger.SetLevel(logger.InfoLevel)
 	}
 
 	if err := config.Validate(); err != nil {
 		return nil, err
+	}
+
+	// Compile and validate all LinkExtractor regexp
+	for _, r := range config.Rules {
+		err := r.LinkExtractor.Compile()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	spider := &Spider{
@@ -81,14 +91,23 @@ func (s *Spider) Wait() {
 					}(req)
 				}
 			} else {
-				for _, url := range resp.ExtractLinks() {
-					if !s.CheckProcessUrl(url) {
-						s.ProcessedUrls[url] = 1
+				// Extracts all links from http response and put it into
+				//  requests channel if does not processed
+				for _, link := range resp.ExtractLinks() {
+					req := NewRequest(link, s.Config)
+					req.Depth++
 
-						go func(link string) {
-							requests <- *NewRequest(link, s.Config)
-						}(url)
+					if req.CanFollow() && !s.CheckProcessUrl(link) {
+						go func(req *Request) {
+							requests <- *req
+						}(req)
 					}
+
+					if req.CanParse() {
+						continue
+					}
+
+					s.ProcessedUrls[link] = 1
 				}
 			}
 		case <-done:
