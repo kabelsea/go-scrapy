@@ -3,14 +3,14 @@ package main
 import (
 	"log"
 
-	"../../scrapy"
+	"github.com/kabelsea/go-scrapy/scrapy"
 )
 
 func main() {
 	// Init spider configuration
 	config := &scrapy.SpiderConfig{
 		Name:               "HabraBot",
-		MaxDepth:           2, // TODO: Needed implementation
+		MaxDepth:           2,
 		ConcurrentRequests: 2,
 		RetryEnabled:       true,
 		RetryTimes:         2,
@@ -18,18 +18,17 @@ func main() {
 			"https://habrahabr.ru/",
 		},
 		Rules: []scrapy.Rule{
-			scrapy.Rule{
-				LinkExtractor: scrapy.LinkExtractor{
-					Allow:        []string{"/post/\\d+/"},
-					AllowDomains: []string{"habrahabr.ru"},
-					DenyDomains:  []string{"twitter.com"},
+			{
+				LinkExtractor: &scrapy.LinkExtractor{
+					Allow:        []string{`^/post/\d+/$`},
+					AllowDomains: []string{`^habrahabr\.ru`},
 				},
 				Follow: true,
 			},
-			scrapy.Rule{
-				LinkExtractor: scrapy.LinkExtractor{
-					Allow:        []string{"/post/\\d+/"},
-					AllowDomains: []string{"habrahabr.ru"},
+			{
+				LinkExtractor: &scrapy.LinkExtractor{
+					Allow:        []string{`^/users/[^/]+/$`},
+					AllowDomains: []string{`^habrahabr\.ru`},
 				},
 				Handler: ProcessItem,
 			},

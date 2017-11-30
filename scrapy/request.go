@@ -22,7 +22,6 @@ type RequestChannel chan Request
 // Create new request object
 func NewRequest(link string, config *SpiderConfig) *Request {
 	parsedUrl, _ := url.Parse(link)
-
 	return &Request{
 		Url:       link,
 		Config:    config,
