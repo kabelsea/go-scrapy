@@ -65,11 +65,10 @@ func (s *Spider) Wait() {
 	for {
 		select {
 		case req := <-requests:
-			logger.Infof("%s started", req.Url)
-
 			go func(request Request) {
 				semaphore <- true
 				defer func() { <-semaphore }()
+				logger.Infof("%s started", req.Url)
 				responses <- request.Download()
 				logger.Infof("%s proceed", req.Url)
 			}(req)
@@ -88,6 +87,14 @@ func (s *Spider) Wait() {
 					}(req)
 				}
 			} else {
+				// Call handlers for url if exists
+				handlers := resp.Handlers()
+				if len(handlers) != 0 {
+					for _, h := range handlers {
+						h(resp)
+					}
+				}
+
 				// Extracts all links from http response and put it into
 				//  requests channel if does not processed
 				for _, link := range resp.ExtractLinks() {

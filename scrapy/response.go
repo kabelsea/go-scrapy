@@ -21,6 +21,7 @@ type ResponseChannel chan *Response
 // Create new response object, initialize with default values
 func NewResponse(req *Request) *Response {
 	return &Response{
+		Url:     req.Url,
 		Request: req,
 	}
 }
@@ -58,4 +59,18 @@ func (r *Response) ExtractLinks() []string {
 		}
 	}
 	return links
+}
+
+// Return handlers list for response object
+func (r *Response) Handlers() []Handler {
+	var handlers []Handler
+
+	for _, lex := range r.Request.Config.Rules {
+		if lex.Handler != nil {
+			if lex.LinkExtractor.Match(r.Request.ParsedURL) {
+				handlers = append(handlers, lex.Handler)
+			}
+		}
+	}
+	return handlers
 }
