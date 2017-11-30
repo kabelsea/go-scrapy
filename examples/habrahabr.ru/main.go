@@ -46,5 +46,5 @@ func main() {
 }
 
 func ProcessItem(resp *scrapy.Response) {
-	log.Println(resp.Url, resp.StatusCode)
+	log.Println("Process item:", resp.Url, resp.StatusCode)
 }
