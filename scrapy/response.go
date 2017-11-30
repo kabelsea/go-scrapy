@@ -20,7 +20,9 @@ type ResponseChannel chan *Response
 
 // Create new response object, initialize with default values
 func NewResponse(req *Request) *Response {
-	return &Response{Request: req}
+	return &Response{
+		Request: req,
+	}
 }
 
 // Return Response status code
@@ -33,7 +35,7 @@ func (r *Response) Success() bool {
 	return true
 }
 
-// Method parse and return all rules from http response
+// Method parse and return all links from http response
 func (r *Response) ExtractLinks() []string {
 	var links []string
 

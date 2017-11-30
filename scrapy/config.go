@@ -1,15 +1,18 @@
 package scrapy
 
-import "time"
-
-type LoggerLevel int
-
-const (
-	Debug LoggerLevel = iota
-	Error
-	Info
-	Warnings
+import (
+	"errors"
+	"time"
 )
+
+//type LoggerLevel int
+//
+//const (
+//	Debug LoggerLevel = iota
+//	Error
+//	Info
+//	Warnings
+//)
 
 var (
 	ConcurrentRequests       = 5
@@ -31,7 +34,7 @@ type SpiderConfig struct {
 	Name           string
 	AllowedDomains []string
 	StartUrls      []string
-	Rules          *Rules
+	Rules          []Rule
 
 	MaxDepth int
 
@@ -91,5 +94,8 @@ func (c *SpiderConfig) LoadDefault() {
 
 // Validate spider configuration
 func (c *SpiderConfig) Validate() error {
+	if len(c.Rules) == 0 {
+		return errors.New("not found rules in configuration")
+	}
 	return nil
 }

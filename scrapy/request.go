@@ -12,6 +12,7 @@ import (
 type Request struct {
 	Url       string
 	Attempt   int
+	Depth     int
 	Config    *SpiderConfig
 	ParsedURL *url.URL
 }
@@ -24,7 +25,6 @@ func NewRequest(link string, config *SpiderConfig) *Request {
 
 	return &Request{
 		Url:       link,
-		Attempt:   0,
 		Config:    config,
 		ParsedURL: parsedUrl,
 	}
@@ -58,4 +58,32 @@ func (r *Request) Download() *Response {
 	response.Body = body
 
 	return response
+}
+
+// Return true if target request can follow
+func (r *Request) CanFollow() bool {
+	if r.Depth >= r.Config.MaxDepth {
+		return false
+	}
+
+	if len(r.Config.Rules) != 0 {
+		for _, lex := range r.Config.Rules {
+			if lex.Follow {
+				return lex.LinkExtractor.Match(r.ParsedURL)
+			}
+		}
+	}
+	return false
+}
+
+// Returns true if target request can parse
+func (r *Request) CanParse() bool {
+	if len(r.Config.Rules) != 0 {
+		for _, lex := range r.Config.Rules {
+			if lex.Handler != nil {
+				return lex.LinkExtractor.Match(r.ParsedURL)
+			}
+		}
+	}
+	return false
 }
