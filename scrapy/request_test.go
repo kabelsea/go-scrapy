@@ -1,11 +1,21 @@
 package scrapy
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"reflect"
 	"testing"
 )
 
 var (
 	config = SpiderConfig{
+		UserAgent: "go-scrapy/test",
+		RequestHeaders: map[string]string{
+			"Test": "Test",
+		},
+		RetryTimes: 1,
 		Rules: []Rule{
 			{
 				LinkExtractor: &LinkExtractor{
@@ -19,8 +29,30 @@ var (
 	}
 )
 
+func TestNewRequest(t *testing.T) {
+	u := "https://example.com/path/?search=name#fragment"
+	up, _ := url.Parse(u)
+	req := NewRequest(u, &config)
+
+	if req.ParsedURL == nil || !reflect.DeepEqual(req.ParsedURL, up) {
+		t.Error(
+			"Request object has wrong parsed url",
+			"expected", up,
+			"got", req.ParsedURL,
+		)
+	}
+
+	if req.HttpClient == nil {
+		t.Error(
+			"Request object doesnt have http client",
+			"expected", &http.Client{},
+			"got", req.HttpClient,
+		)
+	}
+}
+
 func TestRequest_CanFollow(t *testing.T) {
-	config.LoadDefault()
+	config.Default()
 	config.Rules[0].LinkExtractor.Compile()
 
 	req := NewRequest("https://test.com/search.php?q=name", &config)
@@ -55,7 +87,7 @@ func TestRequest_CanFollow(t *testing.T) {
 }
 
 func TestRequest_CanParse(t *testing.T) {
-	config.LoadDefault()
+	config.Default()
 	config.Rules[0].LinkExtractor.Compile()
 
 	req := NewRequest("https://test.com/search.php?q=name", &config)
@@ -75,5 +107,76 @@ func TestRequest_CanParse(t *testing.T) {
 			"expected", false,
 			"got", true,
 		)
+	}
+}
+
+func TestRequest_CanRetry(t *testing.T) {
+	req := NewRequest("https://test.com/search.php?q=name", &config)
+
+	if !req.CanRetry() {
+		t.Error(
+			"Number of request attempts is incorrect",
+			"expected", true,
+			"got", false,
+		)
+	}
+
+	req.Attempt = 2
+	if req.CanRetry() {
+		t.Error(
+			"Number of request attempts is incorrect",
+			"expected", true,
+			"got", false,
+		)
+	}
+}
+
+func TestRequest_Process(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]map[string]string{}
+		data["headers"] = map[string]string{}
+		data["cookies"] = map[string]string{}
+
+		for k, v := range r.Header {
+			data["headers"][k] = v[0]
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
+	}))
+	defer ts.Close()
+
+	req := NewRequest(ts.URL, &config)
+	resp, _ := req.Process()
+
+	body := map[string]map[string]string{}
+	json.Unmarshal(resp.Body, &body)
+
+	if val, ok := body["headers"]["Test"]; !ok || val != "Test" {
+		t.Error(
+			"Not passed HTTP Header `Test` or wrong value",
+			"expected", "Test",
+			"got", val,
+		)
+	}
+
+	if val, ok := body["headers"]["User-Agent"]; !ok || val != config.UserAgent {
+		t.Error(
+			"Not passed HTTP Header `User-Agent` or wrong value",
+			"expected", config.UserAgent,
+			"got", val,
+		)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Error(
+			"Wrong HTTP status code in Response",
+			"expected", 200,
+			"got", resp.StatusCode,
+		)
+	}
+
+	if resp.Body == nil {
+		t.Error("Response body can not be empty")
 	}
 }

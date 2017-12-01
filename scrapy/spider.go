@@ -2,7 +2,6 @@ package scrapy
 
 import (
 	"os"
-	"sync"
 
 	logger "github.com/sirupsen/logrus"
 )
@@ -10,12 +9,11 @@ import (
 type Spider struct {
 	Config        *SpiderConfig
 	ProcessedUrls map[string]int
-	Mutex         *sync.Mutex
 }
 
 // Create new spider instance
 func NewSpider(config *SpiderConfig) (*Spider, error) {
-	config.LoadDefault()
+	config.Default()
 
 	// Setup logger
 	logger.SetOutput(os.Stdout)
@@ -68,47 +66,42 @@ func (s *Spider) Wait() {
 			go func(request Request) {
 				semaphore <- true
 				defer func() { <-semaphore }()
+
 				logger.Infof("%s started", req.Url)
-				responses <- request.Download()
-				logger.Infof("%s proceed", req.Url)
+
+				resp, err := request.Process()
+				if err != nil {
+					if req.CanRetry() {
+						req.Attempt++
+						requests <- req
+						logger.Infof("%s retried", req.Url)
+					}
+				} else {
+					responses <- resp
+					logger.Infof("%s proceed", req.Url)
+				}
 			}(req)
 		case resp := <-responses:
-			if !resp.Success() {
-				req := resp.Request
+			handlers := resp.Handlers()
+			if len(handlers) != 0 {
+				for _, h := range handlers {
+					h(resp)
+				}
+			}
 
-				// Increase request attempt
-				if req.Attempt < s.Config.RetryTimes {
-					req.Attempt++
+			// Extracts all links from http response and put it into
+			//  requests channel if does not processed
+			for _, link := range resp.ExtractLinks() {
+				req := NewRequest(link, s.Config)
+				req.Depth++
 
-					logger.Infof("%s retried", req.Url)
-
-					go func(request *Request) {
-						requests <- *request
+				if (req.CanFollow() || req.CanParse()) && !s.CheckProcessUrl(link) {
+					go func(req *Request) {
+						requests <- *req
 					}(req)
 				}
-			} else {
-				// Call handlers for url if exists
-				handlers := resp.Handlers()
-				if len(handlers) != 0 {
-					for _, h := range handlers {
-						h(resp)
-					}
-				}
 
-				// Extracts all links from http response and put it into
-				//  requests channel if does not processed
-				for _, link := range resp.ExtractLinks() {
-					req := NewRequest(link, s.Config)
-					req.Depth++
-
-					if (req.CanFollow() || req.CanParse()) && !s.CheckProcessUrl(link) {
-						go func(req *Request) {
-							requests <- *req
-						}(req)
-					}
-
-					s.ProcessedUrls[link] = 1
-				}
+				s.ProcessedUrls[link] = 1
 			}
 		case <-done:
 			return

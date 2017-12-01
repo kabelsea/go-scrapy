@@ -5,19 +5,10 @@ import (
 	"time"
 )
 
-//type LoggerLevel int
-//
-//const (
-//	Debug LoggerLevel = iota
-//	Error
-//	Info
-//	Warnings
-//)
-
 var (
 	ConcurrentRequests       = 5
 	MaxDepth                 = 2
-	DownloadTimeout          = time.Duration(30)
+	DownloadTimeout          = time.Duration(30) * time.Second
 	DownloadMaxSize    int32 = 1024 * 1024 * 10
 	UserAgent                = "go-scrapy/1.0"
 	RequestHeaders           = map[string]string{
@@ -38,6 +29,8 @@ type SpiderConfig struct {
 
 	MaxDepth int
 
+	DownloadMiddlewares map[DownloadMiddleware]int
+
 	// Concurrent settings
 	ConcurrentRequests int
 
@@ -56,7 +49,7 @@ type SpiderConfig struct {
 }
 
 // Load default value into spider configuration
-func (c *SpiderConfig) LoadDefault() {
+func (c *SpiderConfig) Default() {
 	if c.MaxDepth == 0 {
 		c.MaxDepth = MaxDepth
 	}
