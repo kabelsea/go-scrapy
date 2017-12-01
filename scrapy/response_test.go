@@ -9,7 +9,7 @@ import (
 // Mock Response object
 func MockResponse() *Response {
 	config := &SpiderConfig{}
-	config.LoadDefault()
+	config.Default()
 
 	return &Response{
 		Url:        "http://test.com",

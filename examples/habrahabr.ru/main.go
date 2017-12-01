@@ -33,6 +33,12 @@ func main() {
 				Handler: ProcessItem,
 			},
 		},
+		DownloadMiddlewares: map[scrapy.DownloadMiddleware]int{
+			&scrapy.RetryMiddleware{
+				Times:     5,
+				HttpCodes: []int{500, 502, 503, 504, 408},
+			}: 200,
+		},
 	}
 
 	// Create new spider
