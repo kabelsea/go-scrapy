@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Default spider configuration
 var (
 	ConcurrentRequests       = 5
 	MaxDepth                 = 2
@@ -19,7 +20,7 @@ var (
 	RetryTimes     = 2
 )
 
-// Scrapy spider configuration
+// Scrapy spider configuration struct
 type SpiderConfig struct {
 	Debug          bool
 	Name           string
@@ -46,6 +47,9 @@ type SpiderConfig struct {
 	RetryEnabled   bool
 	RetryHttpCodes []int
 	RetryTimes     int
+
+	// Spider statistic collector
+	Stats SpiderStats
 }
 
 // Load default value into spider configuration
@@ -82,6 +86,10 @@ func (c *SpiderConfig) Default() {
 		if c.RetryTimes == 0 {
 			c.RetryTimes = RetryTimes
 		}
+	}
+
+	if c.Stats == nil {
+		c.Stats = NewStats()
 	}
 }
 
