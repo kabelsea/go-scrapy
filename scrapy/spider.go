@@ -8,6 +8,7 @@ import (
 
 type Spider struct {
 	Config        *SpiderConfig
+	Stats         *Stats
 	ProcessedUrls map[string]int
 }
 
