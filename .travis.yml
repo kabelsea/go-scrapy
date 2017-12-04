@@ -15,8 +15,9 @@ env:
 
 before_script:
   - curl https://glide.sh/get | sh
+  - go get github.com/mattn/goveralls
 
 script: make deps && make test
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - goveralls -service=travis-ci
