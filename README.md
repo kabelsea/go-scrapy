@@ -67,3 +67,8 @@ func ProcessItem(resp *scrapy.Response) {
 
 # Howto
 Please go through [examples](https://github.com/kabelsea/go-scrapy/tree/master/examples) to get an idea how to use this package.
+
+# Roadmap
+  - Middlewares
+  - More examples
+  - Tests
