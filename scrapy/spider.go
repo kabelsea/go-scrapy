@@ -57,29 +57,30 @@ func (s *Spider) Wait() {
 	go func() {
 		for _, url := range s.Config.StartUrls {
 			s.ProcessedUrls[url] = 1
-			requests <- *NewRequest(url, s.Config)
+			req, err := NewRequest(url, s.Config)
+			if err != nil {
+				// TODO: Process request error
+				continue
+			}
+			requests <- req
 		}
 	}()
 
 	for {
 		select {
 		case req := <-requests:
-			go func(request Request) {
+			go func(request *Request) {
 				semaphore <- true
 				defer func() { <-semaphore }()
 
-				logger.Infof("%s started", req.Url)
+				logger.Infof("%s started", req.URL)
 
 				resp, err := request.Process()
 				if err != nil {
-					if req.CanRetry() {
-						req.Attempt++
-						requests <- req
-						logger.Infof("%s retried", req.Url)
-					}
+					logger.Infof("%s error", req.URL)
 				} else {
 					responses <- resp
-					logger.Infof("%s proceed", req.Url)
+					logger.Infof("%s proceed", req.URL)
 				}
 			}(req)
 		case resp := <-responses:
@@ -93,12 +94,17 @@ func (s *Spider) Wait() {
 			// Extracts all links from http response and put it into
 			//  requests channel if does not processed
 			for _, link := range resp.ExtractLinks() {
-				req := NewRequest(link, s.Config)
+				req, err := NewRequest(link, s.Config)
+				if err != nil {
+					// TODO: Process request error
+					continue
+				}
+
 				req.Depth++
 
 				if (req.CanFollow() || req.CanParse()) && !s.CheckProcessUrl(link) {
 					go func(req *Request) {
-						requests <- *req
+						requests <- req
 					}(req)
 				}
 

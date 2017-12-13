@@ -12,8 +12,6 @@ func main() {
 		Name:               "HabraBot",
 		MaxDepth:           2,
 		ConcurrentRequests: 2,
-		RetryEnabled:       true,
-		RetryTimes:         2,
 		StartUrls: []string{
 			"https://habrahabr.ru/",
 		},
@@ -52,5 +50,5 @@ func main() {
 }
 
 func ProcessItem(resp *scrapy.Response) {
-	log.Println("Process item:", resp.Url, resp.StatusCode)
+	log.Println("Process item:", resp.Request.URL, resp.StatusCode)
 }
