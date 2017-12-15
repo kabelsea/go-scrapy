@@ -23,45 +23,45 @@ import scrapy "github.com/kabelsea/go-scrapy/scrapy"
 # Quickstart
 ```golang
 func main() {
-	// Init spider configuration
-	config := &scrapy.SpiderConfig{
-		Name:               "HabraBot",
-		MaxDepth:           5,
-		ConcurrentRequests: 20,
-		StartUrls: []string{
-			"https://habrahabr.ru/",
-		},
-		Rules: []scrapy.Rule{
-			{
-				LinkExtractor: &scrapy.LinkExtractor{
-					Allow:        []string{`^/post/\d+/$`},
-					AllowDomains: []string{`^habrahabr\.ru`},
-				},
-				Follow: true,
-			},
-			{
-				LinkExtractor: &scrapy.LinkExtractor{
-					Allow:        []string{`^/users/[^/]+/$`},
-					AllowDomains: []string{`^habrahabr\.ru`},
-				},
-				Handler: ProcessItem,
-			},
-		},
-	}
+  // Init spider configuration
+  config := &scrapy.SpiderConfig{
+    Name:               "HabraBot",
+    MaxDepth:           5,
+    ConcurrentRequests: 20,
+    StartUrls: []string{
+      "https://habrahabr.ru/",
+    },
+    Rules: []scrapy.Rule{
+      {
+        LinkExtractor: &scrapy.LinkExtractor{
+          Allow:        []string{`^/post/\d+/$`},
+          AllowDomains: []string{`^habrahabr\.ru`},
+        },
+        Follow: true,
+      },
+      {
+        LinkExtractor: &scrapy.LinkExtractor{
+          Allow:        []string{`^/users/[^/]+/$`},
+          AllowDomains: []string{`^habrahabr\.ru`},
+        },
+        Handler: ProcessItem,
+      },
+    },
+  }
 
-	// Create new spider
-	spider, err := scrapy.NewSpider(config)
-	if err != nil {
-		panic(err)
-	}
+  // Create new spider
+  spider, err := scrapy.NewSpider(config)
+  if err != nil {
+    panic(err)
+  }
 
-	// Run spider and wait
-	spider.Wait()
+  // Run spider and wait
+  spider.Wait()
 }
 
 // Process crawled page
 func ProcessItem(resp *scrapy.Response) {
-	log.Println("Process item:", resp.Url, resp.StatusCode)
+  log.Println("Process item:", resp.Url, resp.StatusCode)
 }
 ```
 
