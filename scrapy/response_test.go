@@ -11,11 +11,12 @@ func MockResponse() *Response {
 	config := &SpiderConfig{}
 	config.Default()
 
+	req, _ := NewRequest("http://test.com", config)
+
 	return &Response{
-		Url:        "http://test.com",
 		StatusCode: 200,
 		Body:       []byte{},
-		Request:    NewRequest("http://test.com", config),
+		Request:    req,
 	}
 }
 

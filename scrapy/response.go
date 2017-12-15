@@ -2,38 +2,39 @@ package scrapy
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 )
 
 var regexpURL, _ = regexp.Compile("<a[^<]*href=['\"](.*?)['\"][^<]*>")
 
-// Spider response object
+// Response is the representation of a HTTP response made by a Spider
 type Response struct {
-	Url        string
+	// StatusCode is the status code of the Response
 	StatusCode int
-	Body       []byte
-	Request    *Request
+
+	// Body is the content of the Response
+	Body []byte
+
+	// Ctx is a context between a Request and a Response
+	Ctx *Context
+
+	// Request is the Request object of the response
+	Request *Request
+
+	// Headers contains the Response's HTTP headers
+	Headers *http.Header
 }
 
 type ResponseChannel chan *Response
 
-// Create new response object, initialize with default values
-func NewResponse(req *Request) *Response {
+// NewResponse creates Response instance and initialized it default values
+func NewResponse(req *Request, ctx *Context) *Response {
 	return &Response{
-		Url:     req.Url,
 		Request: req,
+		Ctx:     ctx,
 	}
-}
-
-// Return Response status code
-func (r *Response) Success() bool {
-	for _, code := range r.Request.Config.RetryHttpCodes {
-		if code == r.StatusCode {
-			return false
-		}
-	}
-	return true
 }
 
 // Method parse and return all links from http response
@@ -51,7 +52,7 @@ func (r *Response) ExtractLinks() []string {
 
 					u, _ := url.Parse(link)
 					if u.Host == "" {
-						link = fmt.Sprintf("%s://%s%s", req.ParsedURL.Scheme, req.ParsedURL.Host, link)
+						link = fmt.Sprintf("%s://%s%s", req.URL.Scheme, req.URL.Host, link)
 					}
 					links = append(links, link)
 				}
@@ -61,13 +62,13 @@ func (r *Response) ExtractLinks() []string {
 	return links
 }
 
-// Return handlers list for response object
+// Handlers returns list callback functions for Response instance
 func (r *Response) Handlers() []Handler {
 	var handlers []Handler
 
 	for _, lex := range r.Request.Config.Rules {
 		if lex.Handler != nil {
-			if lex.LinkExtractor.Match(r.Request.ParsedURL) {
+			if lex.LinkExtractor.Match(r.Request.URL) {
 				handlers = append(handlers, lex.Handler)
 			}
 		}

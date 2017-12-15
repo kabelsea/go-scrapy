@@ -2,22 +2,18 @@ package scrapy
 
 import (
 	"errors"
+	"net/http"
 	"time"
 )
 
-// Default spider configuration
+// Varibales with default spider configuration
 var (
 	ConcurrentRequests       = 5
 	MaxDepth                 = 2
 	DownloadTimeout          = time.Duration(30) * time.Second
 	DownloadMaxSize    int32 = 1024 * 1024 * 10
+	RequestHeaders           = &http.Header{}
 	UserAgent                = "go-scrapy/1.0"
-	RequestHeaders           = map[string]string{
-		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-		"Accept-Language": "en",
-	}
-	RetryHttpCodes = []int{500, 502, 503, 504, 408, 404}
-	RetryTimes     = 2
 )
 
 // Scrapy spider configuration struct
@@ -41,14 +37,9 @@ type SpiderConfig struct {
 
 	// Requests params
 	UserAgent      string
-	RequestHeaders map[string]string
+	RequestHeaders *http.Header
 
-	// Attempt settings
-	RetryEnabled   bool
-	RetryHttpCodes []int
-	RetryTimes     int
-
-	// Spider statistic collector
+	// Spider stats collector
 	Stats SpiderStats
 }
 
@@ -74,18 +65,8 @@ func (c *SpiderConfig) Default() {
 		c.DownloadMaxSize = DownloadMaxSize
 	}
 
-	if len(c.RequestHeaders) == 0 {
+	if c.RequestHeaders == nil {
 		c.RequestHeaders = RequestHeaders
-	}
-
-	if c.RetryEnabled {
-		if len(c.RetryHttpCodes) == 0 {
-			c.RetryHttpCodes = RetryHttpCodes
-		}
-
-		if c.RetryTimes == 0 {
-			c.RetryTimes = RetryTimes
-		}
 	}
 
 	if c.Stats == nil {

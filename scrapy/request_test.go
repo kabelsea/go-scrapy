@@ -12,10 +12,9 @@ import (
 var (
 	config = SpiderConfig{
 		UserAgent: "go-scrapy/test",
-		RequestHeaders: map[string]string{
-			"Test": "Test",
+		RequestHeaders: &http.Header{
+			"Test": {"Test"},
 		},
-		RetryTimes: 1,
 		Rules: []Rule{
 			{
 				LinkExtractor: &LinkExtractor{
@@ -32,21 +31,21 @@ var (
 func TestNewRequest(t *testing.T) {
 	u := "https://example.com/path/?search=name#fragment"
 	up, _ := url.Parse(u)
-	req := NewRequest(u, &config)
+	req, _ := NewRequest(u, &config)
 
-	if req.ParsedURL == nil || !reflect.DeepEqual(req.ParsedURL, up) {
+	if req.URL == nil || !reflect.DeepEqual(req.URL, up) {
 		t.Error(
 			"Request object has wrong parsed url",
 			"expected", up,
-			"got", req.ParsedURL,
+			"got", req.URL,
 		)
 	}
 
-	if req.HttpClient == nil {
+	if val := req.Headers.Get("User-Agent"); val != config.UserAgent {
 		t.Error(
-			"Request object doesnt have http client",
-			"expected", &http.Client{},
-			"got", req.HttpClient,
+			"Not passed HTTP Header `User-Agent` or wrong value",
+			"expected", config.UserAgent,
+			"got", val,
 		)
 	}
 }
@@ -55,20 +54,20 @@ func TestRequest_CanFollow(t *testing.T) {
 	config.Default()
 	config.Rules[0].LinkExtractor.Compile()
 
-	req := NewRequest("https://test.com/search.php?q=name", &config)
+	req, _ := NewRequest("https://test.com/search.php?q=name", &config)
 	if !req.CanFollow() {
 		t.Error(
-			"Can follow url", req.Url,
+			"Can follow url", req.URL,
 			"expected", true,
 			"got", false,
 		)
 	}
 
-	req = NewRequest("https://test.com/search.php?q=name", &config)
+	req, _ = NewRequest("https://test.com/search.php?q=name", &config)
 	req.Depth = config.MaxDepth + 1
 	if req.CanFollow() {
 		t.Error(
-			"Can not follow url, because max depth more then max value in configuration", req.Url,
+			"Can not follow url, because max depth more then max value in configuration", req.URL,
 			"expected", false,
 			"got", true,
 		)
@@ -76,10 +75,10 @@ func TestRequest_CanFollow(t *testing.T) {
 	req.Depth = 0
 
 	config.Rules[0].Follow = false
-	req = NewRequest("https://test.com/search.php?q=name", &config)
+	req, _ = NewRequest("https://test.com/search.php?q=name", &config)
 	if req.CanFollow() {
 		t.Error(
-			"Can not follow url, because follow property has false value", req.Url,
+			"Can not follow url, because follow property has false value", req.URL,
 			"expected", false,
 			"got", true,
 		)
@@ -90,43 +89,22 @@ func TestRequest_CanParse(t *testing.T) {
 	config.Default()
 	config.Rules[0].LinkExtractor.Compile()
 
-	req := NewRequest("https://test.com/search.php?q=name", &config)
+	req, _ := NewRequest("https://test.com/search.php?q=name", &config)
 	if !req.CanParse() {
 		t.Error(
-			"Can parse url", req.Url,
+			"Can parse url", req.URL,
 			"expected", true,
 			"got", false,
 		)
 	}
 
 	config.Rules[0].Handler = nil
-	req = NewRequest("https://test.com/search.php?q=name", &config)
+	req, _ = NewRequest("https://test.com/search.php?q=name", &config)
 	if req.CanParse() {
 		t.Error(
-			"Can not parse url, because rule handler does not exist", req.Url,
+			"Can not parse url, because rule handler does not exist", req.URL,
 			"expected", false,
 			"got", true,
-		)
-	}
-}
-
-func TestRequest_CanRetry(t *testing.T) {
-	req := NewRequest("https://test.com/search.php?q=name", &config)
-
-	if !req.CanRetry() {
-		t.Error(
-			"Number of request attempts is incorrect",
-			"expected", true,
-			"got", false,
-		)
-	}
-
-	req.Attempt = 2
-	if req.CanRetry() {
-		t.Error(
-			"Number of request attempts is incorrect",
-			"expected", true,
-			"got", false,
 		)
 	}
 }
@@ -146,7 +124,7 @@ func TestRequest_Process(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req := NewRequest(ts.URL, &config)
+	req, _ := NewRequest(ts.URL, &config)
 	resp, _ := req.Process()
 
 	body := map[string]map[string]string{}
