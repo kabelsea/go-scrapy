@@ -41,8 +41,6 @@ func NewResponse(req *Request, ctx *Context) *Response {
 func (r *Response) ExtractLinks() []string {
 	var links []string
 
-	req := r.Request
-
 	if len(r.Body) != 0 {
 		matches := regexpURL.FindAllStringSubmatch(string(r.Body), -1)
 		if len(matches) > 0 {
@@ -52,6 +50,7 @@ func (r *Response) ExtractLinks() []string {
 
 					u, _ := url.Parse(link)
 					if u.Host == "" {
+						req := r.Request
 						link = fmt.Sprintf("%s://%s%s", req.URL.Scheme, req.URL.Host, link)
 					}
 					links = append(links, link)

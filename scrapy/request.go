@@ -53,7 +53,13 @@ type RequestChannel chan *Request
 // NewRequest creates a Request instance
 func NewRequest(link string, config *SpiderConfig) (*Request, error) {
 	ctx := NewContext()
-	headers := config.RequestHeaders
+
+	// Copy default headers from config
+	//
+	headers := http.Header{}
+	for k, v := range config.RequestHeaders {
+		headers[k] = v
+	}
 
 	u, err := url.Parse(link)
 	if err != nil {
@@ -69,7 +75,7 @@ func NewRequest(link string, config *SpiderConfig) (*Request, error) {
 		URL:     u,
 		Method:  GetMethod,
 		Config:  config,
-		Headers: headers,
+		Headers: &headers,
 		Ctx:     ctx,
 	}
 	return req, nil
