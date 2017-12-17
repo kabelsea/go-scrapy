@@ -37,7 +37,7 @@ type SpiderConfig struct {
 
 	// Requests params
 	UserAgent      string
-	RequestHeaders *http.Header
+	RequestHeaders http.Header
 
 	// Spider stats collector
 	Stats SpiderStats
@@ -66,7 +66,7 @@ func (c *SpiderConfig) Default() {
 	}
 
 	if c.RequestHeaders == nil {
-		c.RequestHeaders = RequestHeaders
+		c.RequestHeaders = *RequestHeaders
 	}
 
 	if c.Stats == nil {

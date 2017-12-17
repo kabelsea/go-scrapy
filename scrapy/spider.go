@@ -2,6 +2,7 @@ package scrapy
 
 import (
 	"os"
+	"sync/atomic"
 
 	logger "github.com/sirupsen/logrus"
 )
@@ -45,13 +46,18 @@ func NewSpider(config *SpiderConfig) (*Spider, error) {
 
 // Run spider
 func (s *Spider) Wait() {
+	var (
+		requestCounter  int32 = 0
+		responseCounter int32 = 0
+	)
+
 	logger.Info("Crawler started")
 
 	semaphore := make(chan bool, s.Config.ConcurrentRequests)
 	done := make(chan bool)
 
-	requests := make(RequestChannel)
-	responses := make(ResponseChannel)
+	requests := make(RequestChannel, 10)
+	responses := make(ResponseChannel, 10)
 
 	// Initialize requests channel from start urls array
 	go func() {
@@ -63,27 +69,31 @@ func (s *Spider) Wait() {
 				continue
 			}
 			requests <- req
+
+			atomic.AddInt32(&requestCounter, 1)
 		}
 	}()
 
 	for {
 		select {
 		case req := <-requests:
-			go func(request *Request) {
+			go func(r *Request) {
 				semaphore <- true
 				defer func() { <-semaphore }()
 
-				logger.Infof("%s started", req.URL)
+				logger.Infof("%s started", r.URL)
 
-				resp, err := request.Process()
+				resp, err := r.Process()
 				if err != nil {
-					logger.Infof("%s error", req.URL)
+					logger.Infof("%s error", r.URL)
 				} else {
 					responses <- resp
-					logger.Infof("%s proceed", req.URL)
+					logger.Infof("%s proceed", r.URL)
 				}
 			}(req)
 		case resp := <-responses:
+			atomic.AddInt32(&responseCounter, 1)
+
 			handlers := resp.Handlers()
 			if len(handlers) != 0 {
 				for _, h := range handlers {
@@ -103,12 +113,17 @@ func (s *Spider) Wait() {
 				req.Depth++
 
 				if (req.CanFollow() || req.CanParse()) && !s.CheckProcessUrl(link) {
-					go func(req *Request) {
-						requests <- req
+					go func(r *Request) {
+						requests <- r
 					}(req)
-				}
 
+					atomic.AddInt32(&requestCounter, 1)
+				}
 				s.ProcessedUrls[link] = 1
+			}
+
+			if requestCounter == responseCounter {
+				go func() { done <- true }()
 			}
 		case <-done:
 			return

@@ -12,7 +12,7 @@ import (
 var (
 	config = SpiderConfig{
 		UserAgent: "go-scrapy/test",
-		RequestHeaders: &http.Header{
+		RequestHeaders: http.Header{
 			"Test": {"Test"},
 		},
 		Rules: []Rule{
