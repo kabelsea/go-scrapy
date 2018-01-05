@@ -4,6 +4,6 @@ deps:
 	glide install
 
 test:
-	go test $(SRC_FILES) -cover -race -coverprofile=coverage.txt -covermode=atomic -v
+	go test ./scrapy -coverprofile=coverage.txt -v -race && go tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: deps test
